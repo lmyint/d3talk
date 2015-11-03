@@ -13,7 +13,7 @@ tstats <- sapply(1:nrow(logRatio), function(r) {
 	t.test(logRatio[r,1:3], logRatio[,4:6])$statistic
 })
 
-df <- data.frame(id = ids, tstat = tstats, meanDenom = rowMeans(denom), logr = logRatio, numer = numer)
+df <- data.frame(id = ids, tstat = tstats, meanDenom = rowMeans(denom), logr = logRatio, numer = numer, denom = denom)
 rownames(df) <- NULL
 colnames(df) <- gsub("[.]", "_", colnames(df))
 
