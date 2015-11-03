@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Scatterplot exploration</title>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+	<!-- <script type="text/javascript" src="d3/d3.js"></script> -->
+
+	<style type="text/css">
+		.axis path, .axis line {
+			fill: none; /* Usually CSS is color, but for svg, it is fill */
+			stroke: black;
+			shape-rendering: crisp-edges;
+		}
+		.axis text {
+			font-family: sans-serif;
+			font-size: 11px;
+		}
+		p {
+			font-family: sans-serif;
+		}
+	</style>
+</head>
+<body>
+	<script type="text/javascript">
+		var w = 500;
+		var h = 400;
+		var padding = 30;
+
+		d3.csv("data.csv", function(error, data) {
+			if (error) {
+				console.log(error);
+			} else {
+				console.log(data);
+				console.log(d3.extent(data, function(d) { return d.tstat; }));
+				data.forEach(function(d) {
+					d.tstat = +d.tstat
+					d.meanDenom = +d.meanDenom
+					d.logr_Case_1 = +d.logr_Case_1
+					d.logr_Case_2 = +d.logr_Case_2
+					d.logr_Case_3 = +d.logr_Case_3
+					d.logr_Ctrl_1 = +d.logr_Ctrl_1
+					d.logr_Ctrl_2 = +d.logr_Ctrl_2
+					d.logr_Ctrl_3 = +d.logr_Ctrl_3
+					d.denom_Case_1 = +d.denom_Case_1
+					d.denom_Case_2 = +d.denom_Case_2
+					d.denom_Case_3 = +d.denom_Case_3
+					d.denom_Ctrl_1 = +d.denom_Ctrl_1
+					d.denom_Ctrl_2 = +d.denom_Ctrl_2
+					d.denom_Ctrl_3 = +d.denom_Ctrl_3
+					d.numer_Case_1 = +d.numer_Case_1
+					d.numer_Case_2 = +d.numer_Case_2
+					d.numer_Case_3 = +d.numer_Case_3
+					d.numer_Ctrl_1 = +d.numer_Ctrl_1
+					d.numer_Ctrl_2 = +d.numer_Ctrl_2
+					d.numer_Ctrl_3 = +d.numer_Ctrl_3
+				})
+				console.log(data);
+				console.log(d3.extent(data, function(d) { return d.tstat; }));
+				dataset = data;
+
+				// Store data in a map
+				var m = d3.map(data, function(d) { return d.eid; });
+				var xScale = d3.scale.linear()
+								.domain(d3.extent(data, function(d) { return d.meanDenom; }))
+								.range([padding, w - padding*2]);
+				var yScale = d3.scale.linear()
+								.domain(d3.extent(data, function(d) { return d.tstat; }))
+								.range([h - padding, padding]);
+				// Setting up axes
+				var xAxis = d3.svg.axis().scale(xScale).orient("bottom").ticks(5);
+				var yAxis = d3.svg.axis().scale(yScale).orient("left").ticks(5);
+
+				// Set up SVG container for main figure
+				var svg = d3.select("#mainPanel").append("svg").attr({
+					width: w,
+					height: h
+				});
+
+				// Add points
+				svg.selectAll("circle")
+					.data(data)
+					.enter()
+					.append("circle")
+					.attr({
+						cx: function(d) { return xScale(d.meanDenom); },
+						cy: function(d) { return yScale(d.tstat); },
+						r: 2
+					});
+
+				// Add the axes
+				// call() gives g to the axis function
+				svg.append("g").call(xAxis)
+					.attr("class", "x axis")
+					.attr("transform", "translate(0," + (h - padding) + ")");
+				svg.append("g").call(yAxis)
+					.attr("class", "y axis")
+					.attr("transform", "translate(" + padding + ",0)");
+
+				// Hover events
+				var wRatios = 100;
+				var hRatios = h;
+				var sep = 20;
+
+				var svgRatios = d3.select("#ratioPanel").append("svg").attr({
+					width: wRatios,
+					height: hRatios
+				});
+
+				var wAggreg = 500;
+				var hAggreg = h;
+				var paddingAggreg = 100
+				var svgAggreg = d3.select("#numerDenomPanel").append("svg").attr({
+					width: wAggreg,
+					height: hAggreg
+				});
+				var xScaleAggreg = d3.scale.ordinal().domain(d3.range(6)).rangeRoundPoints([paddingAggreg, wAggreg-paddingAggreg]);
+				svg.selectAll("circle")
+					.on("mouseover", function(d) {
+						d3.select(this).attr({
+							fill: "red",
+							r: 5
+						});
+						// Get id
+						var id = d3.select(this).attr("id");
+
+						var subDataRatios = [
+							[1, d.logr_Case_1],
+							[1, d.logr_Case_2],
+							[1, d.logr_Case_3],
+							[2, d.logr_Ctrl_1],
+							[2, d.logr_Ctrl_2],
+							[2, d.logr_Ctrl_3]
+
+						];
+						var yScaleRatios = d3.scale.linear()
+								.domain(d3.extent(subDataRatios, function(d) { return d[1]; }))
+								.range([hRatios - padding, padding]);
+						var yAxisRatios = d3.svg.axis().scale(yScaleRatios).orient("left").ticks(5);
+						svgRatios.selectAll("circle")
+							.data(subDataRatios)
+							.enter()
+							.append("circle")
+							.attr({
+								cx: function(d) { 
+									if (d[0]==1)
+										return (wRatios-sep)/2;
+									else
+										return (wRatios+sep)/2;
+								},
+								cy: function(d) { return yScaleRatios(d[1]) },
+								r: 4,
+								fill: function(d) {
+									if (d[0]==1)
+										return "black";
+									else
+										return "red";
+								}
+							});
+						svgRatios.append("g").call(yAxisRatios)
+							.attr("class", "y axis")
+							.attr("transform", "translate(" + padding + ",0)");
+
+						var logr_denom_numer_Case = [
+							{ logr: d.logr_Case_1, denom: d.denom_Case_1, numer: d.numer_Case_1 },
+							{ logr: d.logr_Case_2, denom: d.denom_Case_2, numer: d.numer_Case_2 },
+							{ logr: d.logr_Case_3, denom: d.denom_Case_3, numer: d.numer_Case_3 }
+						];
+						var logr_denom_numer_Ctrl = [
+							{ logr: d.logr_Ctrl_1, denom: d.denom_Ctrl_1, numer: d.numer_Ctrl_1 },
+							{ logr: d.logr_Ctrl_2, denom: d.denom_Ctrl_2, numer: d.numer_Ctrl_2 },
+							{ logr: d.logr_Ctrl_3, denom: d.denom_Ctrl_3, numer: d.numer_Ctrl_3 }
+						];
+						var sorted_logr_denom_numer = logr_denom_numer_Case.sort(function(a, b) {
+								return a.logr - b.logr;
+							}).concat(logr_denom_numer_Ctrl.sort(function(a, b) {
+								return a.logr - b.logr;
+							}));
+						var denom = [];
+						var numer = [];
+						for (var i = 0; i < sorted_logr_denom_numer.length; i++) {
+							denom.push(sorted_logr_denom_numer[i].denom);
+							numer.push(sorted_logr_denom_numer[i].numer);
+						};
+
+						var yScaleAggreg = d3.scale.linear()
+								.domain([d3.min(denom.concat(numer)), d3.max(denom.concat(numer))])
+								.range([hAggreg - paddingAggreg, paddingAggreg]);
+						var yAxisAggreg = d3.svg.axis().scale(yScaleAggreg).orient("left").ticks(5);
+						
+						svgAggreg.selectAll("circle")
+							.data(denom)
+							.enter()
+							.append("circle")
+							.attr({
+								cx: function(d, i) { return xScaleAggreg(i); },
+								cy: function(d) { return yScaleAggreg(d) },
+								fill: "#0099FF",
+								r: 5
+							});
+						svgAggreg.selectAll("rect")
+							.data(numer)
+							.enter()
+							.append("rect")
+							.attr({
+								x: function(d, i) { return xScaleAggreg(i); },
+								y: function(d) { return yScaleAggreg(d) },
+								fill: "#FF9933",
+								width: 7,
+								height: 7
+							});
+						svgAggreg.selectAll("text")
+							.data(numer)
+							.enter()
+							.append("text")
+							.attr({
+								x: function(d, i) { return xScaleAggreg(i); },
+								y: function(d) { return yScaleAggreg(d+20) },
+							})
+							.attr("font-family", "sans-serif")
+							.attr("font-size", "11px")
+							.text(function(d, i) {
+								return sorted_logr_denom_numer[i].logr.toFixed(3);
+							});
+						svgAggreg.append("g").call(yAxisAggreg)
+							.attr("class", "y axis")
+							.attr("transform", "translate(" + paddingAggreg + ",0)");
+					})
+					.on("mouseout", function(d) {
+						d3.select(this).attr({
+							fill: "black",
+							r: 2
+						});
+
+						d3.select("#ratioPanel").selectAll("circle").remove();
+						d3.select("#ratioPanel").selectAll("g").remove();
+
+						d3.select("#numerDenomPanel").selectAll("circle").remove();
+						d3.select("#numerDenomPanel").selectAll("rect").remove();
+						d3.select("#numerDenomPanel").selectAll("text").remove();
+						d3.select("#numerDenomPanel").selectAll("g").remove();
+					});
+			}
+		});		
+	</script>
+	<table>
+		<tr>
+			<td id="mainPanel">
+			</td>
+			<td id="ratioPanel">
+			</td>
+			<td id="numerDenomPanel">
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
